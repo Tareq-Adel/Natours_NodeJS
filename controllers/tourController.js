@@ -159,6 +159,96 @@ const deleteTour = async (req, res) => {
   }
 };
 
+const getTourStatastics = async (req, res) => {
+  try {
+    const tourStatastics = await Tour.aggregate([
+      {
+        $match: { ratingsAvarage: { $gte: 4 } },
+      },
+      {
+        $group: {
+          _id: { $toUpper: '$difficulty' },
+          numTours: { $sum: 1 },
+          numRatings: { $sum: '$ratingsQuantity' },
+          avgRating: { $avg: '$ratingsAvarage' },
+          avgPrice: { $avg: '$price' },
+          minPrice: { $min: '$price' },
+          maxPrice: { $max: '$price' },
+        },
+      },
+      {
+        $sort: { avgPrice: -1 },
+      },
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      tourStatastics,
+    });
+  } catch (err) {
+    res.status(404).json({
+      status: 'fail',
+      error: err,
+    });
+  }
+};
+
+const getMonthlyPlan = async (req, res) => {
+  try {
+    const year = req.params.year;
+    const monthlyPlan = await Tour.aggregate([
+      {
+        $unwind: '$startDates',
+      },
+      {
+        $match: {
+          startDates: {
+            $gte: new Date(`${year}-1-1`),
+            $lte: new Date(`${year}-12-31`),
+          },
+        },
+      },
+
+      {
+        $group: {
+          _id: { $month: '$startDates' },
+          numTourStarts: { $sum: 1 },
+          tours: { $push: '$name' },
+        },
+      },
+      {
+        $addFields: {
+          month: '$_id',
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+        },
+      },
+      {
+        $sort: {
+          numTourStarts: -1,
+        },
+      },
+      {
+        $limit: 12,
+      },
+    ]);
+    res.status(200).json({
+      status: 'success',
+      data: {
+        plan: monthlyPlan,
+      },
+    });
+  } catch (err) {
+    res.status(404).json({
+      status: 'fail',
+      error: err,
+    });
+  }
+};
+
 module.exports = {
   getAllTours,
   getTour,
@@ -166,4 +256,6 @@ module.exports = {
   updateTour,
   deleteTour,
   topCheapTours,
+  getTourStatastics,
+  getMonthlyPlan,
 };
