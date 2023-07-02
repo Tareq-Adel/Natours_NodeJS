@@ -64,7 +64,6 @@ const getAllTours = async (req, res) => {
       .filtering()
       .limiting()
       .pagination();
-    console.log('err');
     const allTours = await features.query;
 
     // Send Response
