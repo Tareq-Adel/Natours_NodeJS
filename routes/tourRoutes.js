@@ -19,6 +19,14 @@ router.route('/getTourStatastics').get(getTourStatastics);
 router.route('/monthly-plan/:year').get(getMonthlyPlan);
 // router.param('id', checkID);
 router.route(`/`).get(authContruler.protect, getAllTours).post(createTour);
-router.route(`/:id`).get(getTour).patch(updateTour).delete(deleteTour);
+router
+  .route(`/:id`)
+  .get(getTour)
+  .patch(updateTour)
+  .delete(
+    authContruler.protect,
+    authContruler.restrictTo('admin', 'lead-guide'),
+    deleteTour
+  );
 
 module.exports = router;
