@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const slugigy = require('slugify');
+// const User = require('./userModel');
+const { promises } = require('nodemailer/lib/xoauth2');
 
 const tourSchema = new mongoose.Schema(
   {
@@ -102,6 +104,13 @@ const tourSchema = new mongoose.Schema(
         day: Number,
       },
     ],
+    // guides: Array,
+    guides: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
+      },
+    ],
   },
   {
     toJSON: { virtuals: true },
@@ -117,6 +126,13 @@ tourSchema.pre('save', function () {
   this.slug = slugigy(this.name, { lower: true });
 });
 
+// tourSchema.pre('save', async function (next) {
+//   const guidesPromises = this.guides.map(async (id) => await User.findById(id));
+
+//   this.guides = await Promise.all(guidesPromises);
+//   next();
+// });
+
 // tourSchema.pre('save', function () {
 //   console.log(this);
 // });
@@ -128,6 +144,14 @@ tourSchema.pre('save', function () {
 
 tourSchema.pre(/^find/, function () {
   this.find({ secretTour: { $ne: true } });
+});
+
+tourSchema.pre(/^find/, function (next) {
+  this.populate({
+    path: 'guides',
+    select: '-__v -passwordChangedAt',
+  });
+  next();
 });
 
 tourSchema.pre('aggregate', function (next) {
